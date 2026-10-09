@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test-and-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,14 +31,49 @@ jobs:
           unzip -q gradle-8.7-bin.zip -d $HOME
           echo "$HOME/gradle-8.7/bin" >> $GITHUB_PATH
 
+      - name: Run unit tests
+        run: |
+          export ANDROID_HOME=${ANDROID_HOME}
+          export ANDROID_SDK_ROOT=$ANDROID_HOME
+          gradle test --no-daemon --stacktrace
+          echo "Unit tests completed successfully"
+
       - name: Build Debug APK
+        if: success()
         run: |
           export ANDROID_HOME=${ANDROID_HOME}
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Verify APK exists and is valid
+        if: success()
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK" ]; then
+            echo "ERROR: APK file not found at $APK"
+            exit 1
+          fi
+          SIZE=$(stat -c%s "$APK")
+          if [ "$SIZE" -lt 1000000 ]; then
+            echo "ERROR: APK is suspiciously small ($SIZE bytes)"
+            exit 1
+          fi
+          # Confirm it is a ZIP/APK (magic PK\x03\x04)
+          MAGIC=$(xxd -p -l 4 "$APK" || python3 -c "print(open('$APK','rb').read(4).hex())")
+          echo "APK size: $SIZE bytes"
+          echo "APK magic (hex): $MAGIC"
+          if ! echo "$MAGIC" | grep -qi "504b0304"; then
+            echo "ERROR: APK does not have valid ZIP/APK magic bytes"
+            exit 1
+          fi
+          ls -lh "$APK"
+          echo "APK verification passed"
+
+      - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: InstagramDownloader-Fixed
+          name: InstagramDownloader-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
