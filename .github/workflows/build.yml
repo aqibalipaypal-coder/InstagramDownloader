@@ -38,6 +38,14 @@ jobs:
           gradle testDebugUnitTest --no-daemon --stacktrace
           echo "Unit tests completed successfully"
 
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
+          retention-days: 7
+
       - name: Build Debug APK
         if: success()
         run: |
