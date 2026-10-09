@@ -35,7 +35,7 @@ jobs:
         run: |
           export ANDROID_HOME=${ANDROID_HOME}
           export ANDROID_SDK_ROOT=$ANDROID_HOME
-          gradle test --no-daemon --stacktrace
+          gradle testDebugUnitTest --no-daemon --stacktrace
           echo "Unit tests completed successfully"
 
       - name: Build Debug APK
@@ -58,11 +58,10 @@ jobs:
             echo "ERROR: APK is suspiciously small ($SIZE bytes)"
             exit 1
           fi
-          # Confirm it is a ZIP/APK (magic PK\x03\x04)
-          MAGIC=$(xxd -p -l 4 "$APK" || python3 -c "print(open('$APK','rb').read(4).hex())")
+          MAGIC=$(python3 -c "print(open('$APK','rb').read(4).hex())")
           echo "APK size: $SIZE bytes"
           echo "APK magic (hex): $MAGIC"
-          if ! echo "$MAGIC" | grep -qi "504b0304"; then
+          if [ "$MAGIC" != "504b0304" ]; then
             echo "ERROR: APK does not have valid ZIP/APK magic bytes"
             exit 1
           fi

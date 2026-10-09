@@ -14,8 +14,10 @@ object InstagramParser {
         "(?:instagram\\.com|instagr\\.am)/(?:reel|reels|p|tv)/([A-Za-z0-9_-]+)"
     )
 
+    // Simple, robust regex: locate script tags that contain data-sjs and capture their full content.
+    // Does not attempt to match JSON braces. DOT_MATCHES_ALL allows multiline.
     private val DATA_SJS_SCRIPT_REGEX = Regex(
-        """<script\\b[^>]*\\bdata-sjs\\b[^>]*>(.*?)</script>""",
+        """<script[^>]*data-sjs[^>]*>(.*?)</script>""",
         setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE)
     )
 
@@ -29,8 +31,8 @@ object InstagramParser {
     fun isLoginWall(html: String): Boolean {
         val lower = html.lowercase()
         return lower.contains("login_required") ||
-               lower.contains("checkpoint") ||
-               (lower.contains("login") && lower.contains("password") && lower.length < 50_000)
+               lower.contains("checkpoint_required") ||
+               (lower.contains("name=\"password\"") && lower.contains("login") && lower.length < 30_000)
     }
 
     /**
