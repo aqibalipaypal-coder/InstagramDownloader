@@ -17,17 +17,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Android command-line tools and SDK packages
+      - name: Install required Android SDK packages
         run: |
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          cd /tmp
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdtools.zip
-          unzip -q cmdtools.zip -d $HOME/android-sdk/cmdline-tools
-          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
-          export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          # Use the SDK already present on GitHub-hosted runners
+          export ANDROID_HOME=${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
 
       - name: Install Gradle 8.7
         run: |
@@ -37,11 +33,9 @@ jobs:
           echo "$HOME/gradle-8.7/bin" >> $GITHUB_PATH
 
       - name: Build Debug APK
-        env:
-          ANDROID_HOME: ${{ env.HOME }}/android-sdk
         run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+          export ANDROID_HOME=${ANDROID_HOME}
+          export ANDROID_SDK_ROOT=$ANDROID_HOME
           gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
