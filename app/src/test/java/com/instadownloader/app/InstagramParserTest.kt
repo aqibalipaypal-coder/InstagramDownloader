@@ -117,7 +117,7 @@ class InstagramParserTest {
     @Test
     fun detectsLoginWall() {
         assertTrue(InstagramParser.isLoginWall("<html>login_required</html>"))
-        assertTrue(InstagramParser.isLoginWall("<form><input name=\"password\"></form>"))
+        assertTrue(InstagramParser.isLoginWall("<html><form action='/login'><input name=\"password\"></form></html>"))
         assertFalse(InstagramParser.isLoginWall("<html>normal post page with lots of content</html>" + "x".repeat(60_000)))
     }
 
